@@ -1,0 +1,37 @@
+{
+  "exp_name": "dafsl_exp_0",
+  "agent": "DAFSLVisualizerAgent",
+  "mode": "train",
+
+  "cuda": false,
+  "gpu_device": 0,
+  "seed": 1337,
+
+  "some_model_attribute": 0,
+
+  "batch_size": 32,
+
+  "learning_rate": 0.001,
+	"momentum": 0.5,
+  "weight_decay": 0,
+  "beta1": 0.5,
+  "beta2": 0.999,
+
+  "max_epoch": 1,
+	"log_interval": 1,
+
+
+  "validate_every": 1,
+
+  "checkpoint_dir": "checkpoints",
+  "checkpoint_file": "checkpoint.pth.tar",
+
+  "data_loader": "DAFSLDataLoader",
+  "data_loader_workers": 2,
+  "pin_memory": true,
+  "async_loading": true,
+
+  "data_mode": "imgs",
+  "data_folder": "./data/dafsl",
+	"data_domains": "aircraft, omniglot, CUB_200_2011"
+}

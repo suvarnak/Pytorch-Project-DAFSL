@@ -63,7 +63,7 @@ class Generator(nn.Module):
 netG testing
 """
 def main():
-    config = json.load(open('../../configs/dcgan_exp_0.json'))
+    config = json.load(open('configs/dcgan_exp_0.json'))
     config = edict(config)
     inp  = torch.autograd.Variable(torch.randn(config.batch_size, config.g_input_size, 1, 1))
     print (inp.shape)
