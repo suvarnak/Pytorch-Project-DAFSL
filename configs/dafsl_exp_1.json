@@ -1,0 +1,33 @@
+{
+  "exp_name": "dafsl_exp_1",
+  "agent": "DAFSLGeneratorAgent",
+  "mode": "train",
+
+  "cuda": false,
+  "gpu_device": 0,
+  "seed": 1337,
+
+  "batch_size": 64,
+  "learning_rate": 0.001,
+	"momentum": 0.5,
+  "weight_decay": 0,
+  
+	"max_epoch": 2,
+	"log_interval": 1,
+  "validate_every":1,
+
+  "checkpoint_root_dir": "background",
+	"checkpoint_dir": "checkpoints",
+  "checkpoint_file": "generative_model_checkpoint.pth.tar",
+
+  "data_loader": "DAFSLDataLoader",
+  "data_loader_workers": 2,
+  "pin_memory": true,
+  "async_loading": true,
+
+  "data_mode": "imgs",
+  "datasets_root_dir": "./data/dafsl/datasets/",
+  "data_spec_folder": "./data/dafsl/dataset_specs",
+	"data_domains": "src_dataset,aircraft,omniglot,CUB_200_2011",
+  "domains_img_dir": {"src_dataset":"data/images","aircraft":"data/images","CUB_200_2011":"images","omniglot":"images/Sanskrit"}
+}	

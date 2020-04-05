@@ -2,6 +2,7 @@
 Domain Agnostic FSL  Main agent for generating the background knowledge
 """
 import numpy as np
+import os
 
 from tqdm import tqdm
 import shutil
@@ -19,7 +20,6 @@ from agents.base import BaseAgent
 
 from graphs.models.dafsl_cae_model import DAFSL_CAEModel #DAFSLGeneratorModel
 from datasets.dafsl_data_loader import DAFSLDataLoader
-from graphs.losses.bce_kld import BCE_KLDLoss
 
 from torchviz import make_dot
 from tensorboardX import SummaryWriter
@@ -38,8 +38,6 @@ class DAFSLGeneratorAgent(BaseAgent):
         self.model = DAFSL_CAEModel()
         summary(self.model, input_size=(3, 224, 224))
 
-        # define data_loader
-        self.data_loader = DAFSLDataLoader(config=config)
 
         # define loss
         self.loss = nn.MSELoss() #nn.NLLLoss()
@@ -77,12 +75,10 @@ class DAFSLGeneratorAgent(BaseAgent):
             torch.manual_seed(self.manual_seed)
             self.logger.info("Program will run on *****CPU*****\n")
 
-        # Model Loading from the latest checkpoint if not found start from scratch.
-        self.load_checkpoint(self.config.checkpoint_file)
         # Summary Writer
         self.summary_writer = None
 
-    def save_checkpoint(self, filename='checkpoint.pth.tar', is_best=0):
+    def save_checkpoint(self, filename='checkpoint.pth.tar', is_best=0, domain_name=''):
         """
         Saving the latest checkpoint of the training
         :param filename: filename which will contain the state
@@ -99,15 +95,13 @@ class DAFSLGeneratorAgent(BaseAgent):
         torch.save(state, self.config.checkpoint_dir + filename)
         # If it is the best copy it to another file 'model_best.pth.tar'
         if is_best:
-            shutil.copyfile(self.config.checkpoint_dir + filename,
-                            self.config.checkpoint_dir + 'model_best.pth.tar')
+            shutil.copyfile(self.config.checkpoint_dir + filename, os.path.join(self.config.checkpoint_dir,self.config.checkpoint_root_dir,domain_name,'model_best.pth.tar'))
 
-    def load_checkpoint(self, filename):
-        filename = self.config.checkpoint_dir + filename
+    def load_checkpoint(self, filename, domain_name):
+        filename = os.path.join(self.config.checkpoint_dir,domain_name, filename)
         try:
-            self.logger.info("Loading checkpoint '{}'".format(filename))
+            self.logger.info("Loading checkpoint '{}' for domain {}".format(filename,domain_name))
             checkpoint = torch.load(filename)
-
             self.current_epoch = checkpoint['epoch']
             self.current_iteration = checkpoint['iteration']
             self.model.load_state_dict(checkpoint['state_dict'])
@@ -126,14 +120,49 @@ class DAFSLGeneratorAgent(BaseAgent):
         """
         try:
             if self.config.mode == 'test':
-                self.validate()
+                self.validate_acrossdomains()
             else:
-                self.train()
+                self.train_alldomains()
 
         except KeyboardInterrupt:
             self.logger.info("You have entered CTRL+C.. Wait to finalize")
+    
 
-    def train(self):
+    def train_alldomains(self):
+        """
+        This function will the operator
+        :return:
+        """
+        for domain_name in self.config.data_domains.split(','):
+            domain_img_root_dir = os.path.join(self.config.datasets_root_dir,domain_name,"train")
+            train_class_list = os.listdir(domain_img_root_dir) #['737-300']
+            for train_class_name in train_class_list:
+                self.train_generativemodel_class(domain_name, train_class_name)
+ 
+    def train_generativemodel_class(self, domain_name, class_name):
+        self.logger.info("Training the generative models for {} domain".format(domain_name))
+				# Model Loading from the latest checkpoint if not found start from scratch.
+        self.load_checkpoint(self.config.checkpoint_file,domain_name)
+        self.logger.info("$$$"+domain_name+class_name)
+        self.data_loader = DAFSLDataLoader(config=self.config, domain_name=domain_name,class_name= class_name)
+        try: 
+            if self.config.mode == 'test':
+                self.validate(domain_name)
+            else:
+                self.train(domain_name)
+        except KeyboardInterrupt:
+            self.logger.info("You have entered CTRL+C.. Wait to finalize")
+
+    def validate_acrossdomains(self):
+        """
+        This function will the operator
+        :return:
+        """
+        pass
+
+
+
+    def train(self,domain_name):
         """
         Main training function, with per-epoch model saving
         """
@@ -141,15 +170,15 @@ class DAFSLGeneratorAgent(BaseAgent):
         self.criterion = MSELoss()#BCE_KLDLoss(self.model)
         for epoch in range(self.current_epoch, self.config.max_epoch):
             self.current_epoch = epoch
-            self.train_one_epoch()
-            valid_loss = self.validate()
+            self.train_one_epoch(domain_name)
+            valid_loss = self.validate(domain_name)
             is_best = valid_loss > self.best_valid_loss
             if is_best:
                 self.best_valid_loss = valid_loss
             self.logger.info("Saving model checkpoint for epoch" )
-            self.save_checkpoint(is_best=is_best)
+            self.save_checkpoint(is_best=is_best, domain_name=domain_name)
 
-    def train_one_epoch(self):
+    def train_one_epoch(self,domain_name):
         """
         One epoch of training
         :return:
@@ -162,9 +191,9 @@ class DAFSLGeneratorAgent(BaseAgent):
             generated_imgs = self.model(imgs)
             #generated_imgs = generated_imgs[0]  
 						#make_dot(generated_img[0])
-            self.logger.info("Batch index"+ batch_idx)
-            self.logger.info("generated images " + list(generated_imgs.size()))
-            self.logger.info("input images " + list(imgs.size()))
+            #self.logger.info("Batch index"+ str(batch_idx))
+            #self.logger.info("generated images " + list(generated_imgs.size()))
+            #self.logger.info("input images " + list(imgs.size()))
             #print("..........................")
 						# calculate loss
             loss = self.criterion(generated_imgs, imgs)
@@ -178,7 +207,7 @@ class DAFSLGeneratorAgent(BaseAgent):
             self.current_iteration += 1
         
 
-    def validate(self):
+    def validate(self,domain_name):
         """
         One cycle of model validation
         :return:

@@ -32,6 +32,10 @@
   "async_loading": true,
 
   "data_mode": "imgs",
-  "data_folder": "./data/dafsl",
-	"data_domains": "aircraft, omniglot, CUB_200_2011"
-}
+  "datasets_root_dir": "./data/dafsl/datasets/",
+  "data_spec_folder": "./data/dafsl/dataset_specs",
+	"data_domains": "CUB_200_2011,omniglot,aircraft",
+  "domains_img_dir": {"aircraft":"data/images","CUB_200_2011":"images","omniglot":"images/Sanskrit"},
+	"background_knowledge_root_dir": "./data/dafsl/background/"
+
+}	

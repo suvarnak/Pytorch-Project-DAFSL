@@ -16,26 +16,24 @@ class ReshapeTransform:
     def __call__(self, img):
         return torch.reshape(img, self.new_size)
 
-class DAFSLDataLoader:
-    def __init__(self, config):
+class DAFSLDataLoader():
+    def __init__(self, config, domain_name, class_name):
         """
         :param config:
         """
+        self.domain_name = domain_name
         self.config = config
         if config.data_mode == "imgs":
-            img_root_folder = config.data_folder
-            source_domain_list = config.data_domains.split(',')
-            src_dataset1 = source_domain_list[0]
-            print("Source domains", source_domain_list)
+            img_root_folder = config.datasets_root_dir
             dafsl_transforms=[transforms.Resize((224,224), interpolation=PIL.Image.BILINEAR),transforms.ToTensor(), transforms.Normalize(mean=[0.485, 0.456, 0.406],
                      std=[0.229, 0.224, 0.225])]
             #dafsl_transforms.append(ReshapeTransform((-1,)))
-            src_dataset1_train = datasets.ImageFolder(root=os.path.join(img_root_folder, source_domain_list[0], "train"), 
+            src_dataset_train = datasets.ImageFolder(root=os.path.join(img_root_folder, self.domain_name, "train",class_name), 
                                transform=transforms.Compose(dafsl_transforms))
-            src_dataset1_test = datasets.ImageFolder(root=os.path.join(img_root_folder, source_domain_list[0], "test"), 
+            src_dataset_test = datasets.ImageFolder(root=os.path.join(img_root_folder, self.domain_name, "test",class_name), 
                                transform=transforms.Compose(dafsl_transforms))
-            self.train_loader = torch.utils.data.DataLoader(src_dataset1_train,batch_size=self.config.batch_size, shuffle=True, num_workers=self.config.data_loader_workers, pin_memory=self.config.pin_memory)
-            self.test_loader = torch.utils.data.DataLoader(src_dataset1_test,batch_size=self.config.batch_size, shuffle=True, num_workers=self.config.data_loader_workers, pin_memory=self.config.pin_memory)
+            self.train_loader = torch.utils.data.DataLoader(src_dataset_train,batch_size=self.config.batch_size, shuffle=True, num_workers=self.config.data_loader_workers, pin_memory=self.config.pin_memory)
+            self.test_loader = torch.utils.data.DataLoader(src_dataset_test,batch_size=self.config.batch_size, shuffle=True, num_workers=self.config.data_loader_workers, pin_memory=self.config.pin_memory)
         elif config.data_mode == "download":
             raise NotImplementedError("This mode is not implemented YET")
         else:
