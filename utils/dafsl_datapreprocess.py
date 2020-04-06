@@ -3,6 +3,7 @@ import os
 import utils.dirs
 import json
 import shutil
+import glob
 """
 -Preprocess the domin dataset
 """
@@ -55,10 +56,14 @@ def get_imgs_for_class_aircraft(dataset_root_dir, train_class_dir, split="train"
 
 def get_imgs_for_class_cu_birds(dataset_root_dir, train_class_dir, split="train"):
     print("!!!!!!!!!",train_class_dir)
-    image_list = os.listdir(os.path.join(
-        dataset_root_dir, "images", train_class_dir))
-    # print(image_list)
-    return image_list
+    included_extensions = ['jpg','jpeg']
+    img_path = os.path.join(dataset_root_dir, "images", train_class_dir)
+    image_list = glob.glob(img_path+'/[!._]*.jpg')
+    img_names_list = []
+    for fn in image_list:
+			  img_names_list.append(os.path.basename(fn))
+    print(img_names_list)
+    return img_names_list
 
 
 def get_imgs_for_class_omniglot(dataset_root_dir, train_class_dir, split="train"):

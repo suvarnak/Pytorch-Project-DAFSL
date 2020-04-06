@@ -78,7 +78,7 @@ class DAFSLGeneratorAgent(BaseAgent):
         # Summary Writer
         self.summary_writer = None
 
-    def save_checkpoint(self, filename='checkpoint.pth.tar', is_best=0, domain_name=''):
+    def save_checkpoint(self, filename='checkpoint.pth.tar', is_best=0, domain_name='',class_name=''):
         """
         Saving the latest checkpoint of the training
         :param filename: filename which will contain the state
@@ -95,9 +95,12 @@ class DAFSLGeneratorAgent(BaseAgent):
         torch.save(state, self.config.checkpoint_dir + filename)
         # If it is the best copy it to another file 'model_best.pth.tar'
         if is_best:
-            shutil.copyfile(self.config.checkpoint_dir + filename, os.path.join(self.config.checkpoint_dir,self.config.checkpoint_root_dir,domain_name,'model_best.pth.tar'))
+            dst = os.path.join(self.config.checkpoint_dir,self.config.checkpoint_root_dir,domain_name,class_name)
+            if not os.path.exists(dst):
+                os.mkdir(dst)
+            shutil.copyfile(self.config.checkpoint_dir + filename, os.path.join(dst,'model_best.pth.tar'))
 
-    def load_checkpoint(self, filename, domain_name):
+    def load_checkpoint(self, filename, domain_name, class_name):
         filename = os.path.join(self.config.checkpoint_dir,domain_name, filename)
         try:
             self.logger.info("Loading checkpoint '{}' for domain {}".format(filename,domain_name))
@@ -136,20 +139,21 @@ class DAFSLGeneratorAgent(BaseAgent):
         for domain_name in self.config.data_domains.split(','):
             domain_img_root_dir = os.path.join(self.config.datasets_root_dir,domain_name,"train")
             train_class_list = os.listdir(domain_img_root_dir) #['737-300']
+            print(train_class_list)
             for train_class_name in train_class_list:
                 self.train_generativemodel_class(domain_name, train_class_name)
  
     def train_generativemodel_class(self, domain_name, class_name):
         self.logger.info("Training the generative models for {} domain".format(domain_name))
 				# Model Loading from the latest checkpoint if not found start from scratch.
-        self.load_checkpoint(self.config.checkpoint_file,domain_name)
+        self.load_checkpoint(self.config.checkpoint_file,domain_name,class_name)
         self.logger.info("$$$"+domain_name+class_name)
         self.data_loader = DAFSLDataLoader(config=self.config, domain_name=domain_name,class_name= class_name)
         try: 
             if self.config.mode == 'test':
-                self.validate(domain_name)
+                self.validate(domain_name,class_name)
             else:
-                self.train(domain_name)
+                self.train(domain_name,class_name)
         except KeyboardInterrupt:
             self.logger.info("You have entered CTRL+C.. Wait to finalize")
 
@@ -162,7 +166,7 @@ class DAFSLGeneratorAgent(BaseAgent):
 
 
 
-    def train(self,domain_name):
+    def train(self,domain_name,class_name):
         """
         Main training function, with per-epoch model saving
         """
@@ -176,7 +180,7 @@ class DAFSLGeneratorAgent(BaseAgent):
             if is_best:
                 self.best_valid_loss = valid_loss
             self.logger.info("Saving model checkpoint for epoch" )
-            self.save_checkpoint(is_best=is_best, domain_name=domain_name)
+            self.save_checkpoint(is_best=is_best, domain_name=domain_name,class_name=class_name)
 
     def train_one_epoch(self,domain_name):
         """
