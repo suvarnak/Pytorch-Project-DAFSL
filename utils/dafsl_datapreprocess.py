@@ -39,19 +39,19 @@ def create_dir(dirname):
 
 
 def get_imgs_for_class_aircraft(dataset_root_dir, train_class_dir, split="train"):
-    if split != "valid":
-		    trainimgs_mapping_filename = os.path.join(dataset_root_dir, "data/images_variant_"+split+".txt")
-    else:
-	    trainimgs_mapping_filename = os.path.join(
-		        dataset_root_dir, "data/images_variant_"+"val"+".txt")
-
+    trainimgs_mapping_filename = os.path.join(dataset_root_dir, "data/images_variant_train.txt")
     train_imgs_df = pd.read_csv(
         trainimgs_mapping_filename, sep=" ", names=['image', 'label'], dtype=str)
     train_imgs_df = train_imgs_df.set_index(['label'])
     trainclass_imgs_df = train_imgs_df.loc[train_class_dir]
     image_list = trainclass_imgs_df['image'].tolist()
+    no_of_samples = len(image_list)
+    split_idx = (int) (0.8*no_of_samples)
+    print("SPPPPPPPPPPPPPPPPPPPPPPPPPPlit",split_idx,image_list)
+    if split == "train":
+			  return image_list[0:split_idx]
     # print(image_list)
-    return image_list
+    return image_list[split_idx:]
 
 
 def get_imgs_for_class_cu_birds(dataset_root_dir, train_class_dir, split="train"):
@@ -103,31 +103,77 @@ def preprocess_data(config, src_domain_name, spec="train"):
     with open(src_dataset_spec) as f:
         data = json.load(f)
     dataset_root_dir = os.path.join(config.datasets_root_dir, src_domain_name)
-    print(dataset_root_dir)
+    print("*********************",dataset_root_dir)
     dataset_img_dir = os.path.join(
         config.datasets_root_dir, src_domain_name,  config.domains_img_dir[src_domain_name])
-    already_processed = not create_dir(os.path.join(dataset_root_dir, spec))
+    already_processed = not create_dir(os.path.join(config.processed_datasets_root_dir, src_domain_name,spec))
     if already_processed:
         return
-    dir_list = data[spec]
+    dir_list = data["train"]
     logging.info(
-        "training classes list for domain {}.".format(dir_list))
+        "classes list for domain {}.".format(dir_list))
     for class_dir in dir_list:
-		    create_dir(os.path.join(dataset_root_dir, spec, class_dir))
+		    create_dir(os.path.join(config.processed_datasets_root_dir, src_domain_name,spec, class_dir))
+		    create_dir(os.path.join(config.processed_datasets_root_dir, src_domain_name,spec, class_dir,class_dir))
     for class_dir in dir_list:
-        if src_domain_name == "aircraft":
-            train_imglist = get_imgs_for_class_aircraft(dataset_root_dir, class_dir)
-            copy_files(dataset_img_dir, os.path.join(dataset_root_dir, spec, class_dir), train_imglist,extension=".jpg")
+        if src_domain_name == "src_dataset":
+            dataset_root_dir = os.path.join(config.datasets_root_dir, "aircraft")
+            dataset_img_dir = os.path.join(config.datasets_root_dir, "aircraft",  config.domains_img_dir["aircraft"])
+            train_imglist = get_imgs_for_class_aircraft(dataset_root_dir, class_dir,split=spec)
+            copy_files(dataset_img_dir, os.path.join(config.processed_datasets_root_dir, src_domain_name,spec, class_dir, class_dir), train_imglist, extension=".jpg")
+        elif src_domain_name == "aircraft":
+            train_imglist = get_imgs_for_class_aircraft(dataset_root_dir, class_dir, split=spec)
+            copy_files(dataset_img_dir, os.path.join(config.processed_datasets_root_dir, src_domain_name,spec, class_dir, class_dir), train_imglist, extension=".jpg")
         elif src_domain_name == "CUB_200_2011":
             train_imglist = get_imgs_for_class_cu_birds(dataset_root_dir, class_dir)
             src_dir = os.path.join(dataset_root_dir,"images",class_dir)
             print(src_dir)
-            copy_files(src_dir, os.path.join(dataset_root_dir, spec, class_dir), train_imglist,extension="")
+            copy_files(src_dir, os.path.join(config.processed_datasets_root_dir, src_domain_name,spec, class_dir, class_dir), train_imglist,extension="")
         elif src_domain_name == "omniglot":
             train_imglist = get_imgs_for_class_omniglot(dataset_root_dir, class_dir)
             src_dir = os.path.join(dataset_root_dir,"images/Sanskrit",class_dir)
             print(src_dir)
-            copy_files_omniglot(src_dir, os.path.join(dataset_root_dir, spec, class_dir), train_imglist)
+            copy_files_omniglot(src_dir, os.path.join(config.processed_datasets_root_dir, src_domain_name, spec, class_dir,class_dir), train_imglist)
+
+def preprocess_data_for_discriminator(config, src_domain_name, spec="train"):
+    logging.info(
+        "Processing the dataset for domain {} for discriminator.".format(src_domain_name))
+    src_dataset_spec = os.path.join(
+        config.data_spec_folder, src_domain_name + "_splits.json")
+    with open(src_dataset_spec) as f:
+        data = json.load(f)
+    dataset_root_dir = os.path.join(config.datasets_root_dir, src_domain_name)
+    print("*********************",dataset_root_dir)
+    dataset_img_dir = os.path.join(
+        config.datasets_root_dir, src_domain_name,  config.domains_img_dir[src_domain_name])
+    already_processed = not create_dir(os.path.join(config.discriminator_datasets_root_dir,src_domain_name, spec))
+    if already_processed:
+        return
+    dir_list = data["train"]
+    logging.info(
+        "classes list for domain {}.".format(dir_list))
+    for class_dir in dir_list:
+		    create_dir(os.path.join(config.discriminator_datasets_root_dir, src_domain_name,spec,class_dir))
+    for class_dir in dir_list:
+        if src_domain_name == "src_dataset":
+            dataset_root_dir = os.path.join(config.datasets_root_dir, "aircraft")
+            dataset_img_dir = os.path.join(config.datasets_root_dir, "aircraft",  config.domains_img_dir["aircraft"])
+            train_imglist = get_imgs_for_class_aircraft(dataset_root_dir, class_dir,split=spec)
+            copy_files(dataset_img_dir, os.path.join(config.discriminator_datasets_root_dir, src_domain_name,spec,class_dir), train_imglist, extension=".jpg")
+        elif src_domain_name == "aircraft":
+            train_imglist = get_imgs_for_class_aircraft(dataset_root_dir, class_dir, split=spec)
+            copy_files(dataset_img_dir, os.path.join(config.discriminator_datasets_root_dir, src_domain_name,spec,class_dir), train_imglist, extension=".jpg")
+        elif src_domain_name == "CUB_200_2011":
+            train_imglist = get_imgs_for_class_cu_birds(dataset_root_dir, class_dir)
+            src_dir = os.path.join(dataset_root_dir,"images",class_dir)
+            print(src_dir)
+            copy_files(src_dir, os.path.join(config.discriminator_datasets_root_dir, src_domain_name,spec,class_dir), train_imglist,extension="")
+        elif src_domain_name == "omniglot":
+            train_imglist = get_imgs_for_class_omniglot(dataset_root_dir, class_dir)
+            src_dir = os.path.join(dataset_root_dir,"images/Sanskrit",class_dir)
+            print(src_dir)
+            copy_files_omniglot(src_dir, os.path.join(config.discriminator_datasets_root_dir, src_domain_name,spec,class_dir), train_imglist)
+
 
 
 def main():
@@ -147,7 +193,8 @@ def main():
         for src_domain_name in source_domain_list:
             preprocess_data(config, src_domain_name, spec="train")
             preprocess_data(config, src_domain_name, spec="test")
-            preprocess_data(config, src_domain_name, spec="valid")
+            preprocess_data_for_discriminator(config, src_domain_name, spec="train")
+            preprocess_data_for_discriminator(config, src_domain_name, spec="test")
 
 
 if __name__ == "__main__":

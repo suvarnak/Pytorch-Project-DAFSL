@@ -51,6 +51,7 @@ class DAFSLGeneratorAgent(BaseAgent):
         self.current_iteration = 0
         self.best_metric = 0
         self.best_valid_loss = 0
+        self.fixed_noise = Variable(torch.randn(self.config.batch_size, 3, 224, 224))
 
         # set cuda flag
         self.is_cuda = torch.cuda.is_available()
@@ -76,9 +77,9 @@ class DAFSLGeneratorAgent(BaseAgent):
             self.logger.info("Program will run on *****CPU*****\n")
 
         # Summary Writer
-        self.summary_writer = None
+        self.summary_writer = SummaryWriter(log_dir=self.config.summary_dir, comment='DAFSL')
 
-    def save_checkpoint(self, filename='checkpoint.pth.tar', is_best=0, domain_name='',class_name=''):
+    def save_checkpoint(self, filename='checkpoint.pth.tar', is_best=False, domain_name='dummy',class_name='dummy'):
         """
         Saving the latest checkpoint of the training
         :param filename: filename which will contain the state
@@ -92,13 +93,15 @@ class DAFSLGeneratorAgent(BaseAgent):
             'optimizer': self.optimizer.state_dict(),
         }
         # Save the state
-        torch.save(state, self.config.checkpoint_dir + filename)
+        dst = os.path.join("models",domain_name,class_name)
+        print("creating.......",dst,os.path.exists(dst))
+        if os.path.exists(dst) == False:
+            print("creating.......",dst)
+            os.makedirs(dst)
+        torch.save(state, dst + 'model.pth.tar')
         # If it is the best copy it to another file 'model_best.pth.tar'
         if is_best:
-            dst = os.path.join(self.config.checkpoint_dir,self.config.checkpoint_root_dir,domain_name,class_name)
-            if not os.path.exists(dst):
-                os.mkdir(dst)
-            shutil.copyfile(self.config.checkpoint_dir + filename, os.path.join(dst,'model_best.pth.tar'))
+            shutil.copyfile(dst + 'model.pth.tar', os.path.join(dst,'model_best.pth.tar'))
 
     def load_checkpoint(self, filename, domain_name, class_name):
         filename = os.path.join(self.config.checkpoint_dir,domain_name, filename)
@@ -137,7 +140,7 @@ class DAFSLGeneratorAgent(BaseAgent):
         :return:
         """
         for domain_name in self.config.data_domains.split(','):
-            domain_img_root_dir = os.path.join(self.config.datasets_root_dir,domain_name,"train")
+            domain_img_root_dir = os.path.join(self.config.processed_datasets_root_dir,domain_name,"train")
             train_class_list = os.listdir(domain_img_root_dir) #['737-300']
             print(train_class_list)
             for train_class_name in train_class_list:
@@ -151,9 +154,9 @@ class DAFSLGeneratorAgent(BaseAgent):
         self.data_loader = DAFSLDataLoader(config=self.config, domain_name=domain_name,class_name= class_name)
         try: 
             if self.config.mode == 'test':
-                self.validate(domain_name,class_name)
+                self.validate(domain_name)
             else:
-                self.train(domain_name,class_name)
+                self.train(domain_name)
         except KeyboardInterrupt:
             self.logger.info("You have entered CTRL+C.. Wait to finalize")
 
@@ -188,6 +191,7 @@ class DAFSLGeneratorAgent(BaseAgent):
         :return:
         """
         self.model.train()
+        epoch_lossG = AverageMeter()
         for batch_idx, data in enumerate(self.data_loader.train_loader):
 						# credit assignment
             self.optimizer.zero_grad()    # clear the gardients
@@ -204,13 +208,45 @@ class DAFSLGeneratorAgent(BaseAgent):
             loss.backward()
 						# update model weights
             self.optimizer.step()
+            epoch_lossG.update(loss.item())
             if batch_idx % self.config.log_interval == 0:
                 self.logger.info('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                     self.current_epoch, batch_idx * len(data), len(self.data_loader.train_loader.dataset),
                            100. * batch_idx / len(self.data_loader.train_loader), loss.item()))
             self.current_iteration += 1
+            self.summary_writer.add_scalar("epoch/Generator_loss", epoch_lossG.val, self.current_iteration)
         
+        #gen_out = self.model(self.fixed_noise)
+        #out_img = self.data_loader.plot_samples_per_epoch(gen_out.data, self.current_iteration)
+        #self.summary_writer.add_image('train/generated_image', out_img, self.current_iteration)
+        self.visualize_one_epoch()
+        self.logger.info("Training at epoch-" + str(self.current_epoch) + " | " + " - Generator Loss-: " + str(epoch_lossG.val))
 
+
+    def visualize_one_epoch(self):
+        """
+        One epoch of visualizing
+        :return:
+        """
+        self.model.eval()
+        test_loss = 0
+        with torch.no_grad():
+            for batch_idx, data  in enumerate(self.data_loader.test_loader):
+                testimgs, _ = data  #data.to(self.device)
+                generated_testimgs = self.model(testimgs)
+                #generated_testimgs = generated_testimgs[0]  				
+								#make_dot(generated_img[0])
+                print(list(generated_testimgs.size()))
+                #print(list(testimgs.size()))
+                #plt.figure()
+                #img = testimgs[batch_idx]
+                img = generated_testimgs #.reshape((generated_testimgs.size()[0], 3,224,224))
+                #print(list(img.size()))
+                #img  = img.permute(0,3,1,2)
+                #print(list(img.size()))
+                self.data_loader.plot_samples_per_epoch(img,self.current_epoch)
+								#plt.imshow(img.numpy())
+	      
     def validate(self,domain_name):
         """
         One cycle of model validation

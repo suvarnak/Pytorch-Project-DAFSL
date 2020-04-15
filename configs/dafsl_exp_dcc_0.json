@@ -1,0 +1,48 @@
+{
+  "exp_name": "dafsl_exp_0",
+  "agent": "DAFSL_ConceptClassifierAgent",
+  "mode": "train",
+
+  "cuda": false,
+  "gpu_device": 0,
+  "seed": 1337,
+
+  "some_model_attribute": 0,
+
+  "batch_size": 64,
+
+  "learning_rate": 0.001,
+	"momentum": 0.5,
+  "weight_decay": 0,
+  "beta1": 0.5,
+  "beta2": 0.999,
+
+	"image_size": 224,
+  "input_channels": 3,
+  "relu_slope": 0.2,
+  "num_filt_d": 64,
+
+  "max_epoch": 40,
+	"log_interval": 1000,
+
+
+  "validate_every": 5,
+
+  "checkpoint_dir": "checkpoints",
+  "checkpoint_file": "model.pth.tar",
+	"discriminator_datasets_root_dir": "./data/dafsl/discriminator_datasets/",
+
+  "data_loader": "DAFSLDataLoader",
+  "data_loader_workers": 2,
+  "pin_memory": true,
+  "async_loading": true,
+
+  "data_mode": "imgs",
+  "datasets_root_dir": "./data/dafsl/datasets/",
+  "data_spec_folder": "./data/dafsl/dataset_specs",
+	"current_domain": "aircraft",
+	"data_domains": "aircraft",
+  "domains_img_dir": {"aircraft":"data/images","CUB_200_2011":"images","omniglot":"images/Sanskrit"},
+	"background_knowledge_root_dir": "./data/dafsl/background/"
+
+}	

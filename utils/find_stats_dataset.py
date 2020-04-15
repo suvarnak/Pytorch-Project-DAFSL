@@ -8,7 +8,7 @@ from utils.config import *
 
 
 def compute_dataset_stats(config, domain_name):
-		img_root_folder = config.datasets_root_dir
+		img_root_folder = config.processed_datasets_root_dir
 		img_root_folder = os.path.join(img_root_folder, domain_name, "train")
 		print("Image root folder used for calculating mean std", img_root_folder)
 		dataset = datasets.ImageFolder(root=img_root_folder, transform=transforms.Compose([transforms.Resize(256),
