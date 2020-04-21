@@ -36,7 +36,7 @@ class DAFSLGeneratorAgent(BaseAgent):
         print(torch.__version__)
         # define models
         self.model = DAFSL_CAEModel()
-        summary(self.model, input_size=(3, 224, 224))
+        summary(self.model, input_size=(3, self.config.image_size,self.config.image_size))
 
 
         # define loss
@@ -51,7 +51,7 @@ class DAFSLGeneratorAgent(BaseAgent):
         self.current_iteration = 0
         self.best_metric = 0
         self.best_valid_loss = 0
-        self.fixed_noise = Variable(torch.randn(self.config.batch_size, 3, 224, 224))
+        self.fixed_noise = Variable(torch.randn(self.config.batch_size, 3, self.config.image_size, self.config.image_size))
 
         # set cuda flag
         self.is_cuda = torch.cuda.is_available()
@@ -173,7 +173,7 @@ class DAFSLGeneratorAgent(BaseAgent):
         """
         Main training function, with per-epoch model saving
         """
-        summary(self.model, input_size=(3, 224, 224))
+        summary(self.model, input_size=(3, self.config.image_size, self.config.image_size))
         self.criterion = MSELoss()#BCE_KLDLoss(self.model)
         for epoch in range(self.current_epoch, self.config.max_epoch):
             self.current_epoch = epoch

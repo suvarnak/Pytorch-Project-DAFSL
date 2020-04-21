@@ -29,6 +29,7 @@
   "datasets_root_dir": "./data/dafsl/datasets/",
   "processed_datasets_root_dir": "./data/dafsl/processed_datasets/",
 	"discriminator_datasets_root_dir": "./data/dafsl/discriminator_datasets/",
+	"domaindiscriminator_datasets_root_dir": "./data/dafsl/domain_discriminator_datasets/",
   "data_spec_folder": "./data/dafsl/dataset_specs",
 	"data_domains": "src_dataset,aircraft,CUB_200_2011,omniglot",
   "domains_img_dir": {"src_dataset":"data/images","aircraft":"data/images","CUB_200_2011":"images","omniglot":"images/Sanskrit"}

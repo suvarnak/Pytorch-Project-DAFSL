@@ -8,9 +8,6 @@ import torch.optim as optim
 import torchvision
 from   torchvision import datasets, transforms
 
-IMAGE_SIZE = 50176
-IMAGE_WIDTH = IMAGE_HEIGHT = 224
-
 
 class DAFSL_CAEModel(nn.Module):
     

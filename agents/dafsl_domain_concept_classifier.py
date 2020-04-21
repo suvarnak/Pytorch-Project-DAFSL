@@ -121,7 +121,9 @@ class DAFSL_ConceptClassifierAgent(BaseAgent):
             self.logger.info("No checkpoint exists from '{}'. Skipping...".format(
                 self.config.checkpoint_dir))
             self.logger.info("**First time to train**")
-
+            self.current_epoch = 0
+            self.current_iteration = 0
+            self.best_valid_loss = 0 
     def run(self):
         """
         This function will the operator
@@ -172,7 +174,7 @@ class DAFSL_ConceptClassifierAgent(BaseAgent):
         Main training function, with per-epoch model saving
         """
         self.criterion = nn.CrossEntropyLoss()  # BCE_KLDLoss(self.model)
-        summary(self.model, input_size=(3, 224, 224))
+        summary(self.model, input_size=(3, self.config.image_size, self.config.image_size))
         for epoch in range(self.current_epoch, self.config.max_epoch):
             self.current_epoch = epoch
             self.train_one_epoch(domain_name=domain_name)

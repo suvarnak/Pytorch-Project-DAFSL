@@ -109,7 +109,7 @@ class DAFSLVisualizerAgent(BaseAgent):
         :return:
         """
 								# define the optimization
-        summary(self.model, input_size=(3, 224, 224))
+        summary(self.model, input_size=(3, self.config.image_size,self.config.image_size))
         self.criterion = MSELoss()#BCE_KLDLoss(self.model)
         for epoch in range(1, self.config.max_epoch + 1):
             self.visualize_one_epoch()

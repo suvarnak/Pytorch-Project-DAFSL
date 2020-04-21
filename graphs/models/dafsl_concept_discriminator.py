@@ -5,7 +5,7 @@ date: 30 April 2018
 """
 import torch
 import torch.nn as nn
-
+import torchvision.models as models
 import json
 from easydict import EasyDict as edict
 from graphs.weights_initializer import weights_init
@@ -14,6 +14,19 @@ from graphs.weights_initializer import weights_init
 class DAFSL_ConceptDiscriminatorModel(nn.Module):
     def __init__(self, config,no_class_labels):
         super().__init__()
+        self.model_ft = models.vgg11_bn(pretrained=True)
+        lt=8
+        cntr=0
+        for child in self.model_ft.children():
+            cntr+=1
+            if cntr < lt:
+						# print child
+                for param in child.parameters():
+                    param.requires_grad = False
+
+        num_ftrs = self.model_ft.classifier[6].in_features
+        self.model_ft.classifier[6] = nn.Linear(num_ftrs,no_class_labels)
+
         self.cnn_layers = nn.Sequential(
             nn.Conv2d(in_channels=3,out_channels=32, kernel_size=3, stride=1, padding=1),  # b, 32, 224, 224
             nn.ReLU(True),
@@ -31,9 +44,10 @@ class DAFSL_ConceptDiscriminatorModel(nn.Module):
 
 
     def forward(self, x):
-        x = self.cnn_layers(x)
-        x = x.view(x.size(0), -1)
-        x = self.linear_layers(x)
+        x = self.model_ft(x)
+        #x = self.cnn_layers(x)
+        #x = x.view(x.size(0), -1)
+        #x = self.linear_layers(x)
         return x
 
 """
